@@ -1,0 +1,9 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+kubectl get events -n librechat --sort-by=.lastTimestamp | tail -60
+
+kubectl logs -n librechat deploy/librechat-librechat --previous
+
+kubectl describe pod -n librechat librechat-meilisearch-0
+
+kubectl describe pod -n librechat librechat-mongodb-9b6bb6f48-f8wnk

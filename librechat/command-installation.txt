@@ -1,0 +1,40 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+helm install librechat oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat \
+  --values values.yaml
+
+helm upgrade librechat oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat \
+  --values values.yaml
+
+helm uninstall librechat -n librechat
+
+kubectl delete pod -n librechat --all
+kubectl delete pvc -n librechat --all
+
+--------------------------------------------------------------------------------------------
+
+kubectl create secret generic librechat-credentials-env \
+  --from-literal=CREDS_KEY=$(openssl rand -hex 16) \
+  --from-literal=CREDS_IV=$(openssl rand -hex 8) \
+  --from-literal=JWT_SECRET=$(openssl rand -hex 16) \
+  --from-literal=JWT_REFRESH_SECRET=$(openssl rand -hex 16) \
+  --from-literal=MEILI_MASTER_KEY=$(openssl rand -hex 16) \
+  --from-literal=OPENAI_API_KEY="sk-your-actual-openai-key-here" \
+  --namespace librechat
+
+--------------------------------------------------------------------------------------------
+
+kubectl create secret docker-registry docker-secret \
+  --docker-server=docker.sebaoffice.ir \
+  --docker-username=0082280665 \
+  --docker-password=ABcd@12345 \
+  --namespace librechat
+
+--------------------------------------------------------------------------------------------
+
+
+
+
+

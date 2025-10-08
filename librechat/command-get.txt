@@ -1,0 +1,13 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+kubectl get pods -n librechat 
+kubectl get secrets -n librechat 
+kubectl get pvc -n librechat 
+kubectl get configmaps -n librechat 
+kubectl get ingress -n librechat 
+kubectl get jobs -n librechat 
+kubectl get cronjobs -n librechat 
+kubectl get svc -n librechat 
+kubectl get certificate -n librechat 
+kubectl get sts -n librechat 
+
