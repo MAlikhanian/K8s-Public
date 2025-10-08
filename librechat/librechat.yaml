@@ -7,6 +7,8 @@ replicaCount: 1
 
 
 global:
+  imagePullSecrets:
+    - docker-secret
   security:
     allowInsecureImages: true
    # default Secret for envs/ only Passwords. Can be locally generated with: kubectl create secret generic librechat-secret-envs --from-env-file=.env.example --dry-run=client -o yaml > secret-envs.yaml
@@ -301,8 +303,6 @@ mongodb:
     repository: bitnami/mongodb
     tag: latest
     pullPolicy: IfNotPresent
-  imagePullSecrets:
-    - docker-secret
   persistence:
     enabled: true
     accessModes:
@@ -333,7 +333,5 @@ meilisearch:
     repository: getmeili/meilisearch
     tag: "v1.7.3"
     pullPolicy: IfNotPresent
-  imagePullSecrets:
-    - docker-secret
   auth:
     existingMasterKeySecret: "librechat-credentials-env"
