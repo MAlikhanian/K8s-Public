@@ -7,3 +7,5 @@ kubectl logs -n librechat deploy/librechat-librechat --previous
 kubectl describe pod -n librechat librechat-meilisearch-0
 
 kubectl describe pod -n librechat librechat-mongodb-9b6bb6f48-f8wnk
+
+kubectl logs -n librechat -l app.kubernetes.io/name=librechat-librechat --tail=50
