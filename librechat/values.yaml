@@ -1,0 +1,154 @@
+replicaCount: 3
+
+global:
+  imagePullSecrets:
+    - docker-secret
+  security:
+    allowInsecureImages: true
+   
+  librechat:
+    existingSecretName: "librechat-credentials-env"
+    existingSecretApiKey: OPENAI_API_KEY
+
+librechat:
+  configEnv:
+    PLUGIN_MODELS: gpt-4,gpt-4-turbo-preview,gpt-4-0125-preview,gpt-4-1106-preview,gpt-4-0613,gpt-3.5-turbo,gpt-3.5-turbo-0125,gpt-3.5-turbo-1106,gpt-3.5-turbo-0613
+    DEBUG_PLUGINS: "true"
+   
+  existingSecretName: "librechat-credentials-env"
+  configYamlContent: ""
+  existingConfigYaml: ""
+
+  imageVolume:
+    enabled: true
+    size: 20Gi            
+    accessModes: ReadWriteOnce
+    storageClassName: ceph-block
+
+librechat-rag-api:
+  enabled: false
+  embeddingsProvider: openai
+
+image:
+  repository: danny-avila/librechat
+  registry: docker.sebaoffice.ir
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets:
+  - name: docker-secret
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations: {}
+  name: ""
+
+lifecycle: {}
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+  fsGroup: 2000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 3080
+  targetPort: 3080
+  containerPort: 3080
+  annotations: {}
+
+ingress:
+  enabled: true
+  className: haproxy
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    haproxy.org/request-set-header: |
+      X-Forwarded-Proto https
+    haproxy.org/proxy-body-size: 64m
+  hosts:
+    - host: chat.sebaoffice.ir
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - secretName: chat-sebaoffice-tls
+      hosts:
+        - chat.sebaoffice.ir
+
+resources:
+  limits:
+    cpu: "1"
+    memory: 2Gi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3080
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3080
+
+volumes: []
+volumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+hostAliases: []
+dnsPolicy: "" 
+dnsConfig: {}
+
+updateStrategy:
+  type: RollingUpdate
+
+mongodb:
+  enabled: true
+  auth:
+    enabled: false
+  databases:
+   - LibreChat
+  image:
+    registry: docker.sebaoffice.ir
+    repository: bitnami/mongodb
+    tag: latest
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 16Gi
+    storageClass: ceph-block
+
+meilisearch:
+  enabled: true
+  persistence:
+    enabled: true
+    storageClass: ceph-block
+    size: 10Gi
+  image:
+    registry: docker.sebaoffice.ir
+    repository: getmeili/meilisearch
+    tag: "v1.7.3"
+    pullPolicy: IfNotPresent
+  auth:
+    existingMasterKeySecret: "librechat-credentials-env"
