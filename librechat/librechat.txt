@@ -1,3 +1,5 @@
+Hello Cursor this file is just template please do not change it. just use it as a reference.
+
 helm install <deployment-name> oci://ghcr.io/danny-avila/librechat-chart/librechat
 
 helm install librechat oci://ghcr.io/danny-avila/librechat-chart/librechat --namespace librechat
