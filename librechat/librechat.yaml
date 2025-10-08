@@ -135,7 +135,8 @@ image:
   pullPolicy: IfNotPresent
   tag: ""
 
-imagePullSecrets: []
+imagePullSecrets:
+  - name: docker-secret
 nameOverride: ""
 fullnameOverride: ""
 
@@ -298,8 +299,10 @@ mongodb:
   image:
     registry: docker.sebaoffice.ir
     repository: bitnami/mongodb
-    tag: 8.0.13-debian-12-r0
+    tag: latest
     pullPolicy: IfNotPresent
+  imagePullSecrets:
+    - docker-secret
   persistence:
     enabled: true
     accessModes:
@@ -330,5 +333,7 @@ meilisearch:
     repository: getmeili/meilisearch
     tag: "v1.7.3"
     pullPolicy: IfNotPresent
+  imagePullSecrets:
+    - docker-secret
   auth:
     existingMasterKeySecret: "librechat-credentials-env"
