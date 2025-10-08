@@ -1,0 +1,37 @@
+# Kubernetes Secrets (never commit these)
+*secret*.yaml
+*-secret.yaml
+secrets/
+.secrets/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Helm
+charts/
+*.tgz
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Logs
+*.log
+logs/
