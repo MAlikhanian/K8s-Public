@@ -14,9 +14,7 @@ kubectl get sts -n librechat
 kubectl get secret librechat-credentials-env -n librechat -o json | jq '.data | keys'
 kubectl get secret librechat-credentials-env -n librechat -o jsonpath='{.data.OPENAI_API_KEY}' | base64 -d
 
-kubectl get secret librechat-credentials-env -n librechat -o json | jq '.data | with_entries(.value |= @base64d)'
-
-kubectl exec -it -n librechat librechat-librechat-6b46f97476-bsjhp -- env | grep LDAP_BIND_CREDENTIALS
+kubectl get secret gitlab-ldap-bind -n gitlab-system -o json | jq '.data | with_entries(.value |= @base64d)'
 
 # Helm commands
 

@@ -9,3 +9,7 @@ kubectl describe pod -n librechat librechat-meilisearch-0
 kubectl describe pod -n librechat librechat-mongodb-9b6bb6f48-f8wnk
 
 kubectl logs -n librechat -l app.kubernetes.io/name=librechat-librechat --tail=50
+
+kubectl logs -n librechat librechat-librechat-7b7d87b4fc-7rqk4 --tail=100
+
+kubectl exec -it -n librechat librechat-librechat-6b46f97476-bsjhp -- env | grep DEBUG

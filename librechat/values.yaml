@@ -11,10 +11,19 @@ global:
 
 librechat:
   configEnv:
-    ALLOW_REGISTRATION: "true"
-    ALLOW_EMAIL_LOGIN: "true"
-    ALLOW_SOCIAL_LOGIN: "true"
-    DOMAIN_WHITELIST: "*"
+    LDAP_URL: "ldaps://sebadc01.seba.local:636"
+    LDAP_BIND_DN: "CN=Read,OU=OU-User,OU=OU-IT,OU=OU-SEBA,DC=SEBA,DC=local"
+    LDAP_BIND_CREDENTIALS: "${LDAP_BIND_PASSWORD}"
+    LDAP_USER_SEARCH_BASE: "DC=SEBA,DC=local"
+    #LDAP_SEARCH_FILTER: "(sAMAccountName={{username}})"
+    LDAP_SEARCH_FILTER: "(&(sAMAccountName={{username}})(memberOf=CN=SG-AI-Chat,OU=OU-Security Group,OU=OU-IT,OU=OU-SEBA,DC=SEBA,DC=local))"
+    LDAP_LOGIN_USES_USERNAME: "true"
+    LDAP_CA_CERT_PATH: "/etc/librechat/certs/ca.crt"
+    LDAP_TLS_REJECT_UNAUTHORIZED: "true"
+    LDAP_ID: "sAMAccountName"
+    LDAP_USERNAME: "sAMAccountName"
+    LDAP_EMAIL: "mail"
+    LDAP_FULL_NAME: "displayName"
    
   existingSecretName: "librechat-credentials-env"
 
@@ -140,8 +149,15 @@ readinessProbe:
     path: /health
     port: 3080
 
-volumes: []
-volumeMounts: []
+volumes:
+  - name: ldap-ca-cert
+    secret:
+      secretName: ldap-ca-cert
+
+volumeMounts:
+  - name: ldap-ca-cert
+    mountPath: /etc/librechat/certs
+    readOnly: true
 nodeSelector: {}
 tolerations: []
 affinity: {}

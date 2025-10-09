@@ -15,6 +15,9 @@ kubectl delete pvc -n librechat --all
 
 --------------------------------------------------------------------------------------------
 
+kubectl create secret generic ldap-ca-cert -n librechat \
+  --from-file=ca.crt=../gitlab/seba-root-ca.pem
+
 kubectl create secret generic librechat-credentials-env \
   --from-literal=CREDS_KEY=$(openssl rand -hex 16) \
   --from-literal=CREDS_IV=$(openssl rand -hex 8) \
@@ -44,6 +47,47 @@ kubectl create secret generic librechat-credentials-env \
   --from-literal=OPENROUTER_KEY="" \
   --namespace librechat \
   --dry-run=client -o yaml | kubectl apply -f -
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "add", "path": "/data/LDAP_SERVER", "value":"'$(echo -n "sebadc01.seba.local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_PORT", "value":"'$(echo -n "389" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_BASE_DN", "value":"'$(echo -n "DC=seba,DC=local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_BIND_DN", "value":"'$(echo -n "SEBA\Read" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_BIND_PASSWORD", "value":"'$(echo -n "ABcd@12345" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_SEARCH_FILTER", "value":"'$(echo -n "(sAMAccountName={{username}})" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_GROUP_BASE_DN", "value":"'$(echo -n "CN=Users,DC=seba,DC=local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_GROUP_FILTER", "value":"'$(echo -n "(member={{userDN}})" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_USER_BASE_DN", "value":"'$(echo -n "CN=Users,DC=seba,DC=local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_USER_FILTER", "value":"'$(echo -n "(sAMAccountName={{username}})" | base64)'"}
+  ]'
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "add", "path": "/data/LDAP_BIND_CREDENTIALS", "value":"'$(echo -n "ABcd@12345" | base64)'"},
+  ]'
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "remove", "path": "/data/LDAP_SERVER"},
+    {"op": "remove", "path": "/data/LDAP_PORT"},
+    {"op": "remove", "path": "/data/LDAP_BASE_DN"},
+    {"op": "remove", "path": "/data/LDAP_BIND_DN"},
+    {"op": "remove", "path": "/data/LDAP_SEARCH_FILTER"},
+    {"op": "remove", "path": "/data/LDAP_GROUP_BASE_DN"},
+    {"op": "remove", "path": "/data/LDAP_GROUP_FILTER"},
+    {"op": "remove", "path": "/data/LDAP_USER_BASE_DN"},
+    {"op": "remove", "path": "/data/LDAP_USER_FILTER"}
+  ]'
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "remove", "path": "/data/LDAP_BIND_PASSWORD"},
+  ]'
 
 --------------------------------------------------------------------------------------------
 
