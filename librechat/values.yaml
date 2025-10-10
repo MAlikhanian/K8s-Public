@@ -39,7 +39,7 @@ librechat:
         - name: "openai/gpt-oss-20b:free"
           label: "SEBA AI (GPT OSS 20B) [Free]"
           description: "OpenAI GPT OSS 20B (Free Tier)"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/openai.ico"
           preset:
             endpoint: "OpenRouter"
             model: "openai/gpt-oss-20b:free"
@@ -66,7 +66,7 @@ librechat:
         - name: "moonshotai/kimi-k2:free"
           label: "SEBA AI (Kimi K2) [Free]"
           description: "Moonshot AI Kimi K2 (Free Tier)"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/kimi.ico"
           preset:
             endpoint: "OpenRouter"
             model: "moonshotai/kimi-k2:free"
@@ -93,7 +93,7 @@ librechat:
         - name: "openai/gpt-5"
           label: "SEBA AI (GPT-5)"
           description: "OpenAI GPT-5"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/openai.ico"
           preset:
             endpoint: "OpenRouter"
             model: "openai/gpt-5"
@@ -120,7 +120,7 @@ librechat:
         - name: "anthropic/claude-sonnet-4.5"
           label: "SEBA AI (Claude Sonnet 4.5)"
           description: "Anthropic Claude Sonnet 4.5"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/anthropic.ico"
           preset:
             endpoint: "OpenRouter"
             model: "anthropic/claude-sonnet-4.5"
@@ -147,7 +147,7 @@ librechat:
         - name: "deepseek/deepseek-r1"
           label: "SEBA AI (DeepSeek R1)"
           description: "DeepSeek R1"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/deepseek.ico"
           preset:
             endpoint: "OpenRouter"
             model: "deepseek/deepseek-r1"
@@ -174,7 +174,7 @@ librechat:
         - name: "google/gemini-2.5-flash"
           label: "SEBA AI (Gemini 2.5 Flash)"
           description: "Google Gemini 2.5 Flash"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/gemini.ico"
           preset:
             endpoint: "OpenRouter"
             model: "google/gemini-2.5-flash"
@@ -201,7 +201,7 @@ librechat:
         - name: "x-ai/grok-4"
           label: "SEBA AI (Grok 4)"
           description: "xAI Grok 4"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/xai.ico"
           preset:
             endpoint: "OpenRouter"
             model: "x-ai/grok-4"
@@ -228,7 +228,7 @@ librechat:
         - name: "qwen/qwen-max"
           label: "SEBA AI (Qwen Max)"
           description: "Alibaba Qwen Max"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/qwen.ico"
           preset:
             endpoint: "OpenRouter"
             model: "qwen/qwen-max"
@@ -255,7 +255,7 @@ librechat:
         - name: "perplexity/sonar"
           label: "SEBA AI (Perplexity Sonar)"
           description: "Perplexity Sonar"
-          iconURL: "https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+          iconURL: "https://chat.sebaoffice.ir/icons/perplexity.ico"
           preset:
             endpoint: "OpenRouter"
             model: "perplexity/sonar"

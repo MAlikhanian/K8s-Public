@@ -98,3 +98,7 @@ kubectl create secret docker-registry docker-secret \
   --namespace librechat
 
 --------------------------------------------------------------------------------------------
+
+kubectl create configmap librechat-icons \
+  --from-file=icons \
+  --namespace librechat

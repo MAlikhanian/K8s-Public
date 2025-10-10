@@ -18,6 +18,15 @@ kubectl get secret librechat-credentials-env -n librechat -o json | jq '.data | 
 
 kubectl exec -it -n librechat librechat-librechat-6b46f97476-bsjhp -- env | grep LDAP_BIND_CREDENTIALS
 
+# Basic details
+kubectl describe configmap -n librechat librechat-mongodb-common-scripts
+
+# Full YAML output (shows all data)
+kubectl get configmap -n librechat librechat-mongodb-common-scripts -o yaml
+
+# Just the data section
+kubectl get configmap -n librechat librechat-mongodb-common-scripts -o jsonpath='{.data}'
+
 # Helm commands
 
 helm list -n librechat
