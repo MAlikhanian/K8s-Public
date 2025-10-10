@@ -301,7 +301,7 @@ librechat:
           summarize: false
           summaryModel: "openai/gpt-3.5-turbo"
           forcePrompt: false
-          modelDisplayLabel: "OpenRouter"
+          modelDisplayLabel: "SEBA AI"
           dropParams: ["user"]
           headers:
             HTTP-Referer: "https://chat.sebaoffice.ir"
