@@ -304,7 +304,7 @@ librechat:
           modelDisplayLabel: "SEBA AI"
           dropParams: ["user"]
           headers:
-            HTTP-Referer: "https://chat.sebaoffice.ir"
+            HTTP-Referer: "https://chat.spioffice.ir"
             X-Title: "SEBA AI Chat"
 
   existingConfigYaml: ""
@@ -367,14 +367,14 @@ ingress:
       X-Forwarded-Proto https
     haproxy.org/proxy-body-size: 64m
   hosts:
-    - host: chat.sebaoffice.ir
+    - host: chat.spioffice.ir
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
     - secretName: chat-sebaoffice-tls
       hosts:
-        - chat.sebaoffice.ir
+        - chat.spioffice.ir
 
 resources:
   limits:

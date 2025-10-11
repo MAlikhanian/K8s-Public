@@ -8,7 +8,16 @@ helm upgrade librechat oci://ghcr.io/danny-avila/librechat-chart/librechat \
   --namespace librechat \
   --values values.yaml
 
+helm install librechat-spi oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-spi \
+  --values values-spi.yaml
+
+helm upgrade librechat-spi oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-spi \
+  --values values-spi.yaml
+
 helm uninstall librechat -n librechat
+helm uninstall librechat-spi -n librechat-spi
 
 kubectl delete pod -n librechat --all
 kubectl delete pvc -n librechat --all
@@ -45,6 +54,7 @@ kubectl create secret generic librechat-credentials-env \
   --from-literal=JWT_REFRESH_SECRET=$(openssl rand -hex 16) \
   --from-literal=MEILI_MASTER_KEY=$(openssl rand -hex 16) \
   --from-literal=OPENROUTER_KEY="" \
+  --from-literal=LDAP_BIND_CREDENTIALS="ABcd@12345" \
   --namespace librechat \
   --dry-run=client -o yaml | kubectl apply -f -
 
