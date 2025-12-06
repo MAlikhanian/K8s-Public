@@ -16,8 +16,17 @@ helm upgrade librechat-spi oci://ghcr.io/danny-avila/librechat-chart/librechat \
   --namespace librechat-spi \
   --values values-spi.yaml
 
+helm install librechat-alborz oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-alborz \
+  --values values-alborz.yaml
+
+helm upgrade librechat-alborz oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-alborz \
+  --values values-alborz.yaml
+
 helm uninstall librechat -n librechat
 helm uninstall librechat-spi -n librechat-spi
+helm uninstall librechat-alborz -n librechat-alborz
 
 kubectl delete pod -n librechat --all
 kubectl delete pvc -n librechat --all
