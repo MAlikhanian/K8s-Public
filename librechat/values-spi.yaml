@@ -44,6 +44,25 @@ librechat:
         externalUrl: "https://erp.spioffice.ir"
         openNewTab: true
     
+    fileConfig:
+      endpoints:
+        OpenRouter:
+          fileLimit: 10
+          fileSizeLimit: 50
+          totalSizeLimit: 100
+          supportedMimeTypes:
+            - "image/.*"
+            - "application/pdf"
+            - "^text/.*"
+            - "application/json"
+            - "application/xml"
+            - "application/(msword|vnd\\.openxmlformats-officedocument\\.wordprocessingml\\.document)"
+            - "application/(vnd\\.ms-excel|vnd\\.openxmlformats-officedocument\\.spreadsheetml\\.sheet)"
+            - "application/(vnd\\.ms-powerpoint|vnd\\.openxmlformats-officedocument\\.presentationml\\.presentation)"
+            - "application/(zip|x-zip-compressed|x-rar-compressed|x-7z-compressed)"
+            - "video/(mp4|mpeg|webm)"
+            - "audio/(mpeg|wav|ogg|mp3|flac|webm)"
+    
     modelSpecs:
       enforce: false
       prioritize: true
