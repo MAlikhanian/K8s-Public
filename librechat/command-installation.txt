@@ -121,3 +121,19 @@ kubectl create secret docker-registry docker-secret \
 kubectl create configmap librechat-icons \
   --from-file=icons \
   --namespace librechat
+
+--------------------------------------------------------------------------------------------
+
+kubectl -n librechat-alborz scale deployment librechat-alborz-librechat --replicas=0
+
+kubectl -n librechat-alborz scale deployment librechat-alborz-librechat --replicas=1
+
+kubectl -n librechat scale deployment librechat-librechat --replicas=0
+
+kubectl -n librechat scale deployment librechat-librechat --replicas=1
+
+kubectl -n librechat-spi scale deployment librechat-spi-librechat --replicas=0
+
+kubectl -n librechat-spi scale deployment librechat-spi-librechat --replicas=1
+
+--------------------------------------------------------------------------------------------
