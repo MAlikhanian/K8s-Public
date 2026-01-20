@@ -1,0 +1,98 @@
+apiVersion: installation.mattermost.com/v1beta1
+kind: Mattermost
+metadata:
+  name: mattermost
+  namespace: mattermost
+spec:
+  version: 11.3.0
+  licenseSecret: ""
+  replicas: 1
+
+  ingress:
+    enabled: true
+    host: social.sebaoffice.ir
+
+    # IMPORTANT: enable TLS on the generated Ingress
+    tlsSecret: mattermost-social-tls
+
+    annotations:
+      kubernetes.io/ingress.class: haproxy
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+
+      haproxy.org/ssl-redirect: "true"
+      haproxy.org/backend-protocol: "http"
+
+      haproxy.org/request-set-header: |
+        X-Forwarded-Proto https
+        X-Forwarded-Port 443
+
+      haproxy.org/timeout-connect: "10s"
+      haproxy.org/timeout-server: "3600s"
+      haproxy.org/timeout-client: "3600s"
+      haproxy.org/timeout-tunnel: "3600s"
+      haproxy.org/timeout-http-request: "10s"
+      haproxy.org/timeout-http-keep-alive: "3600s"
+
+      haproxy.org/forwardfor: "add"
+      haproxy.org/ssl-passthrough: "false"
+      haproxy.org/backend-check-interval: "2s"
+      haproxy.org/balance: "roundrobin"
+
+  database:
+    external:
+      secret: postgres-connection
+
+  fileStore:
+    external:
+      url: rook-ceph-rgw-ceph-objectstore.rook-ceph.svc.cluster.local
+      bucket: mattermost-files
+      secret: s3-credentials
+
+  mattermostEnv:
+    - name: MM_SERVICESETTINGS_SITEURL
+      value: "https://social.sebaoffice.ir"
+
+    - name: MM_SERVICESETTINGS_LISTENADDRESS
+      value: ":8065"
+
+    # Force-disable Mattermost internal HTTPS/LE/redirect
+    - name: MM_SERVICESETTINGS_FORWARD80TO443
+      value: "false"
+    - name: MM_SERVICESETTINGS_USELETSENCRYPT
+      value: "false"
+
+    - name: MM_SERVICESETTINGS_TLSSTRICTTRANSPORT
+      value: "true"
+    - name: MM_SERVICESETTINGS_TLSSTRICTTRANSPORTMAXAGE
+      value: "31536000"
+
+    - name: MM_SERVICESETTINGS_READTIMEOUT
+      value: "300"
+    - name: MM_SERVICESETTINGS_WRITETIMEOUT
+      value: "300"
+
+    - name: MM_FILESETTINGS_DRIVERNAME
+      value: "amazons3"
+    - name: MM_FILESETTINGS_AMAZONS3SSL
+      value: "false"
+    - name: MM_FILESETTINGS_AMAZONS3ENDPOINT
+      value: "rook-ceph-rgw-ceph-objectstore.rook-ceph.svc.cluster.local"
+    - name: MM_FILESETTINGS_AMAZONS3SIGNV2
+      value: "false"
+    - name: MM_FILESETTINGS_AMAZONS3PATHSTYLE
+      value: "true"
+
+    - name: MM_CLUSTERSETTINGS_ENABLE
+      value: "false"
+
+    - name: MM_SERVICESETTINGS_ENABLEINSECUREOUTGOINGCONNECTIONS
+      value: "false"
+
+  scheduling:
+    resources:
+      requests:
+        cpu: "2"
+        memory: 4Gi
+      limits:
+        cpu: "4"
+        memory: 8Gi
