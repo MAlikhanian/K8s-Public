@@ -12,7 +12,6 @@ spec:
     enabled: true
     host: social.sebaoffice.ir
 
-    # IMPORTANT: enable TLS on the generated Ingress
     tlsSecret: mattermost-social-tls
 
     annotations:
@@ -55,7 +54,6 @@ spec:
     - name: MM_SERVICESETTINGS_LISTENADDRESS
       value: ":8065"
 
-    # Force-disable Mattermost internal HTTPS/LE/redirect
     - name: MM_SERVICESETTINGS_FORWARD80TO443
       value: "false"
     - name: MM_SERVICESETTINGS_USELETSENCRYPT
