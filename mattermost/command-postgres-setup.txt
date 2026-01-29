@@ -1,0 +1,139 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+# ============================================================================
+# SETUP MATTERMOST DATABASE IN CRUNCHY DATA POSTGRESQL
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# Step 1: Identify your PostgreSQL cluster
+# ----------------------------------------------------------------------------
+
+# Replace <namespace> and <cluster-name> with your actual values
+# Example: namespace might be "postgres" or "pgo" or custom namespace
+# Example: cluster-name might be "postgres-cluster" or "my-postgres"
+
+# List all PostgreSQL clusters
+kubectl get postgresclusters -A
+
+# ----------------------------------------------------------------------------
+# Step 2: Get connection information
+# ----------------------------------------------------------------------------
+
+# Set variables (replace with your actual values)
+NAMESPACE="postgres-operator"  # Your PostgreSQL namespace
+CLUSTER_NAME="hippo"  # Your cluster name (from kubectl get all -n postgres-operator)
+USERNAME="<your-username>"  # Usually cluster name or custom user - check secrets
+
+# Get primary service name
+PRIMARY_SERVICE="${CLUSTER_NAME}-primary"
+
+# Get connection details from secret
+kubectl get secret ${CLUSTER_NAME}-pguser-${USERNAME} -n ${NAMESPACE} -o jsonpath='{.data.uri}' | base64 -d
+
+# Extract individual components
+DB_USER=$(kubectl get secret ${CLUSTER_NAME}-pguser-${USERNAME} -n ${NAMESPACE} -o jsonpath='{.data.user}' | base64 -d)
+DB_PASSWORD=$(kubectl get secret ${CLUSTER_NAME}-pguser-${USERNAME} -n ${NAMESPACE} -o jsonpath='{.data.password}' | base64 -d)
+DB_HOST=$(kubectl get secret ${CLUSTER_NAME}-pguser-${USERNAME} -n ${NAMESPACE} -o jsonpath='{.data.host}' | base64 -d)
+DB_PORT=$(kubectl get secret ${CLUSTER_NAME}-pguser-${USERNAME} -n ${NAMESPACE} -o jsonpath='{.data.port}' | base64 -d)
+
+# Display connection info
+echo "Database User: ${DB_USER}"
+echo "Database Password: ${DB_PASSWORD}"
+echo "Database Host: ${DB_HOST}"
+echo "Database Port: ${DB_PORT}"
+
+# ----------------------------------------------------------------------------
+# Step 3: Create Mattermost database
+# ----------------------------------------------------------------------------
+
+# Option 1: Using kubectl exec (recommended)
+# Connect to PostgreSQL and create database
+kubectl exec -it ${CLUSTER_NAME}-instance-<pod-id> -n ${NAMESPACE} -- psql -U ${DB_USER} -d postgres -c "CREATE DATABASE mattermost;"
+
+# Or use postgres superuser if you have access
+kubectl exec -it ${CLUSTER_NAME}-instance-<pod-id> -n ${NAMESPACE} -- psql -U postgres -d postgres -c "CREATE DATABASE mattermost;"
+
+# Grant privileges to your user (if using postgres superuser)
+kubectl exec -it ${CLUSTER_NAME}-instance-<pod-id> -n ${NAMESPACE} -- psql -U postgres -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE mattermost TO ${DB_USER};"
+
+# Option 2: Using port-forward and psql locally
+# kubectl port-forward svc/${PRIMARY_SERVICE} -n ${NAMESPACE} 5432:5432
+# psql -h localhost -U ${DB_USER} -d postgres -c "CREATE DATABASE mattermost;"
+
+# ----------------------------------------------------------------------------
+# Step 4: Verify database creation
+# ----------------------------------------------------------------------------
+
+# List all databases
+kubectl exec -it ${CLUSTER_NAME}-instance-<pod-id> -n ${NAMESPACE} -- psql -U ${DB_USER} -d postgres -c "\l"
+
+# Verify Mattermost database exists
+kubectl exec -it ${CLUSTER_NAME}-instance-<pod-id> -n ${NAMESPACE} -- psql -U ${DB_USER} -d postgres -c "\l" | grep mattermost
+
+# Test connection to Mattermost database
+kubectl exec -it ${CLUSTER_NAME}-instance-<pod-id> -n ${NAMESPACE} -- psql -U ${DB_USER} -d mattermost -c "SELECT version();"
+
+# ----------------------------------------------------------------------------
+# Step 5: Build connection strings for Mattermost secret
+# ----------------------------------------------------------------------------
+
+# Primary connection string
+CONNECTION_STRING="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/mattermost?connect_timeout=10"
+
+# For read replicas (if available, check for replica service)
+REPLICA_SERVICE="${CLUSTER_NAME}-replicas"
+REPLICA_CONNECTION_STRING="postgres://${DB_USER}:${DB_PASSWORD}@${REPLICA_SERVICE}.${NAMESPACE}.svc.cluster.local:${DB_PORT}/mattermost?connect_timeout=10"
+
+# Display connection strings
+echo "Primary Connection String:"
+echo "${CONNECTION_STRING}"
+echo ""
+echo "Replica Connection String (if replicas exist):"
+echo "${REPLICA_CONNECTION_STRING}"
+
+# ----------------------------------------------------------------------------
+# Step 6: Encode connection strings to base64
+# ----------------------------------------------------------------------------
+
+# Encode primary connection string
+echo -n "${CONNECTION_STRING}" | base64
+
+# Encode replica connection string (if using replicas)
+echo -n "${REPLICA_CONNECTION_STRING}" | base64
+
+# Or encode directly
+echo -n "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/mattermost?connect_timeout=10" | base64
+
+# ----------------------------------------------------------------------------
+# Step 7: Update Mattermost database secret
+# ----------------------------------------------------------------------------
+
+# The encoded values should be added to mattermost-database-secret.yaml:
+# DB_CONNECTION_CHECK_URL: <base64-encoded-primary-connection>
+# DB_CONNECTION_STRING: <base64-encoded-primary-connection>
+# MM_SQLSETTINGS_DATASOURCEREPLICAS: <base64-encoded-replica-connection> (optional)
+
+# ----------------------------------------------------------------------------
+# Quick setup script (replace variables first)
+# ----------------------------------------------------------------------------
+
+# Uncomment and customize these lines:
+# NAMESPACE="postgres-operator"
+# CLUSTER_NAME="hippo"
+# USERNAME="<your-username>"  # Check secrets: kubectl get secrets -n postgres-operator | grep hippo
+# POD_NAME=$(kubectl get pods -n ${NAMESPACE} | grep ${CLUSTER_NAME} | grep -v deploy | head -1 | awk '{print $1}')
+# 
+# # Get connection info
+# DB_USER=$(kubectl get secret ${CLUSTER_NAME}-pguser-${USERNAME} -n ${NAMESPACE} -o jsonpath='{.data.user}' | base64 -d)
+# DB_PASSWORD=$(kubectl get secret ${CLUSTER_NAME}-pguser-${USERNAME} -n ${NAMESPACE} -o jsonpath='{.data.password}' | base64 -d)
+# DB_HOST="${CLUSTER_NAME}-primary.${NAMESPACE}.svc.cluster.local"
+# DB_PORT="5432"
+# 
+# # Create database
+# kubectl exec -it ${POD_NAME} -n ${NAMESPACE} -- psql -U ${DB_USER} -d postgres -c "CREATE DATABASE mattermost;"
+# 
+# # Build and encode connection string
+# CONN_STRING="postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/mattermost?connect_timeout=10"
+# echo "Connection string: ${CONN_STRING}"
+# echo "Base64 encoded:"
+# echo -n "${CONN_STRING}" | base64

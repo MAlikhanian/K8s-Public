@@ -1,0 +1,231 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+# ============================================================================
+# MATTERMOST KUBERNETES INSTALLATION GUIDE
+# Based on: https://docs.mattermost.com/deployment-guide/server/deploy-kubernetes.html
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# STEP 1: Install Ingress Controller (HAProxy Ingress)
+# ----------------------------------------------------------------------------
+
+# Note: Using HAProxy Ingress (already installed in cluster)
+# If you need to install HAProxy Ingress Controller, use:
+# helm repo add haproxy-ingress https://haproxy-ingress.github.io/charts
+# helm repo update
+# helm install haproxy-ingress haproxy-ingress/haproxy-ingress \
+#   --namespace haproxy-ingress \
+#   --create-namespace
+
+# Verify HAProxy Ingress Controller installation
+kubectl get pods -n haproxy-ingress
+# Or check your HAProxy Ingress namespace
+
+# ----------------------------------------------------------------------------
+# STEP 2: Install the Mattermost Operator
+# ----------------------------------------------------------------------------
+
+# Add Mattermost Helm repository
+helm repo add mattermost https://helm.mattermost.com
+helm repo update
+
+# Create namespace for Mattermost Operator
+kubectl create ns mattermost-operator
+
+# Install Mattermost Operator (latest version)
+helm install mattermost-operator mattermost/mattermost-operator -n mattermost-operator
+
+# Install Mattermost Operator with custom config.yaml
+# helm install mattermost-operator mattermost/mattermost-operator -n mattermost-operator -f config.yaml
+
+# Verify Operator installation
+kubectl get pods -n mattermost-operator
+kubectl get crd | grep mattermost
+
+# ----------------------------------------------------------------------------
+# STEP 3: Create Mattermost License Secret (Enterprise Only - SKIP FOR TEAM EDITION)
+# ----------------------------------------------------------------------------
+
+# NOTE: If using Team Edition (free version), SKIP THIS STEP
+# Team Edition does not require a license and supports single-server deployment only
+
+# For Enterprise Edition only:
+# Create license secret file: mattermost-license-secret.yaml
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: my-mattermost-license
+# type: Opaque
+# stringData:
+#   license: <LICENSE_FILE_CONTENTS>
+
+# kubectl apply -f mattermost-license-secret.yaml
+
+# ----------------------------------------------------------------------------
+# STEP 4: Setup PostgreSQL Database and Create Secret
+# ----------------------------------------------------------------------------
+
+# For Crunchy Data PostgreSQL:
+# 1. Check your PostgreSQL cluster using: command-postgres-check.txt
+# 2. Setup Mattermost database using: command-postgres-setup.txt
+# 3. Get connection information and create the secret below
+
+# Create database secret file: mattermost-database-secret.yaml
+# Example for Crunchy Data PostgreSQL:
+# Format: postgres://username:password@cluster-name-primary.namespace.svc.cluster.local:5432/mattermost?connect_timeout=10
+# 
+# Steps:
+# 1. Get connection info from your PostgreSQL secret:
+#    kubectl get secret <cluster-name>-pguser-<username> -n <namespace> -o jsonpath='{.data.uri}' | base64 -d
+# 
+# 2. Create Mattermost database:
+#    kubectl exec -it <postgres-pod> -n <namespace> -- psql -U <username> -d postgres -c "CREATE DATABASE mattermost;"
+# 
+# 3. Build connection string with mattermost database:
+#    postgres://<user>:<password>@<cluster-name>-primary.<namespace>.svc.cluster.local:5432/mattermost?connect_timeout=10
+# 
+# 4. Encode connection strings to base64:
+#    echo -n "postgres://user:password@host:5432/mattermost?connect_timeout=10" | base64
+
+# Example for AWS Aurora PostgreSQL:
+# DB_CONNECTION_CHECK_URL: postgres://user:password@my-database.cluster-abcd.us-east-1.rds.amazonaws.com:5432/mattermost?connect_timeout=10
+# DB_CONNECTION_STRING: postgres://user:password@my-database.cluster-abcd.us-east-1.rds.amazonaws.com:5432/mattermost?connect_timeout=10
+# MM_SQLSETTINGS_DATASOURCEREPLICAS: postgres://user:password@my-database.cluster-ro-abcd.us-east-1.rds.amazonaws.com:5432/mattermost?connect_timeout=10
+
+kubectl apply -f mattermost-database-secret.yaml
+
+# ----------------------------------------------------------------------------
+# STEP 5: Setup Ceph RGW and Create Filestore Secret
+# ----------------------------------------------------------------------------
+
+# For Ceph RGW (Rados Gateway) S3-compatible storage:
+# 1. Check Ceph RGW using: command-ceph-rgw-check.txt
+# 2. Create S3 user and get credentials
+# 3. Create bucket for Mattermost
+# 4. Create the secret below
+
+# Create filestore secret file: mattermost-filestore-secret.yaml
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: my-s3-credentials
+# type: Opaque
+# data:
+#   accesskey: <base64-encoded-access-key>
+#   secretkey: <base64-encoded-secret-key>
+
+# Steps to get Ceph RGW credentials:
+# 1. Get Ceph tools pod: kubectl get pods -n rook-ceph | grep tools
+# 2. Create S3 user: kubectl exec -it rook-ceph-tools-<pod-id> -n rook-ceph -- radosgw-admin user create --uid=mattermost --display-name="Mattermost"
+# 3. Get credentials: kubectl exec -it rook-ceph-tools-<pod-id> -n rook-ceph -- radosgw-admin user info --uid=mattermost
+# 4. Create bucket: kubectl exec -it rook-ceph-tools-<pod-id> -n rook-ceph -- radosgw-admin bucket create --uid=mattermost --bucket=mattermost-files
+# 5. Encode access_key and secret_key to base64:
+#    echo -n "<access-key>" | base64
+#    echo -n "<secret-key>" | base64
+
+# For AWS S3 (if not using Ceph):
+# Encode access key and secret key to base64:
+# echo -n "YOUR_ACCESS_KEY" | base64
+# echo -n "YOUR_SECRET_KEY" | base64
+
+kubectl apply -f mattermost-filestore-secret.yaml
+
+# ----------------------------------------------------------------------------
+# STEP 6: Create Mattermost Installation Manifest
+# ----------------------------------------------------------------------------
+
+# Create installation manifest file: mattermost-installation.yaml
+# See mattermost-installation.yaml template file for full example
+
+kubectl apply -f mattermost-installation.yaml
+
+# ----------------------------------------------------------------------------
+# STEP 7: Monitor Installation Status
+# ----------------------------------------------------------------------------
+
+# Check Mattermost installation status
+kubectl -n mattermost get mattermost
+
+# Get detailed information about Mattermost installation
+kubectl -n mattermost describe mattermost <INSTALLATION_NAME>
+
+# Check Mattermost pods
+kubectl -n mattermost get pods
+
+# Describe pods for more details
+kubectl -n mattermost describe pod <pod-name>
+
+# Follow logs from Mattermost pods
+kubectl -n mattermost logs -f <pod-name>
+
+# Follow logs from Mattermost Operator
+kubectl -n mattermost-operator logs -f <operator-pod-name>
+
+# ----------------------------------------------------------------------------
+# STEP 8: Get Ingress Information
+# ----------------------------------------------------------------------------
+
+# Get Mattermost ingress address
+kubectl -n mattermost get ingress
+
+# Describe ingress for detailed information
+kubectl -n mattermost describe ingress
+
+# ----------------------------------------------------------------------------
+# UPGRADE MATTERMOST
+# ----------------------------------------------------------------------------
+
+# Update the version in mattermost-installation.yaml and reapply
+kubectl apply -f mattermost-installation.yaml
+
+# Or patch the installation directly
+kubectl -n mattermost patch mattermost <INSTALLATION_NAME> --type='merge' -p='{"spec":{"version":"<NEW_VERSION>"}}'
+
+# ----------------------------------------------------------------------------
+# SCALE DEPLOYMENT
+# ----------------------------------------------------------------------------
+
+# Scale Mattermost deployment (for single-server, set replicas to 1)
+# For Enterprise multi-server, adjust replicas as needed
+kubectl -n mattermost scale deployment <deployment-name> --replicas=<number>
+
+# ----------------------------------------------------------------------------
+# TROUBLESHOOTING COMMANDS
+# ----------------------------------------------------------------------------
+
+# Check all resources in mattermost namespace
+kubectl -n mattermost get all
+
+# Check events in namespace
+kubectl -n mattermost get events --sort-by='.lastTimestamp'
+
+# Check operator logs
+kubectl -n mattermost-operator logs -l control-plane=controller-manager
+
+# Check CRD status
+kubectl get mattermost -n mattermost -o yaml
+
+# Delete and recreate installation (if needed)
+kubectl -n mattermost delete mattermost <INSTALLATION_NAME>
+kubectl apply -f mattermost-installation.yaml
+
+# ----------------------------------------------------------------------------
+# UNINSTALL MATTERMOST
+# ----------------------------------------------------------------------------
+
+# Delete Mattermost installation
+kubectl -n mattermost delete mattermost <INSTALLATION_NAME>
+
+# Delete secrets
+# kubectl -n mattermost delete secret my-mattermost-license  # Only if Enterprise license was used
+kubectl -n mattermost delete secret my-postgres-connection
+kubectl -n mattermost delete secret my-s3-credentials
+
+# Uninstall Mattermost Operator
+helm uninstall mattermost-operator -n mattermost-operator
+
+# Delete namespace (optional, removes all resources)
+kubectl delete ns mattermost
+kubectl delete ns mattermost-operator
+
+--------------------------------------------------------------------------------------------
