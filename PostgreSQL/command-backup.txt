@@ -1,0 +1,79 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+# ============================================================================
+# pgBackRest BACKUP & RESTORE COMMANDS
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# CHECK BACKUP STATUS
+# ----------------------------------------------------------------------------
+
+# Check backup jobs
+kubectl get jobs -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo
+
+# Check backup cronjobs
+kubectl get cronjobs -n postgres-operator
+
+# Check pgBackRest repo pod
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/pgbackrest=""
+
+# View backup info from inside the repo pod
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/pgbackrest="" -o jsonpath='{.items[0].metadata.name}') -- pgbackrest info
+
+# Check backup job logs
+kubectl logs -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/pgbackrest-backup="" --tail=100
+
+# ----------------------------------------------------------------------------
+# TRIGGER MANUAL BACKUP
+# ----------------------------------------------------------------------------
+
+# Trigger a one-time full backup via annotation
+kubectl annotate postgrescluster hippo -n postgres-operator --overwrite \
+  postgres-operator.crunchydata.com/pgbackrest-backup="$(date +%Y%m%d%H%M%S)"
+
+# Watch backup job progress
+kubectl get jobs -n postgres-operator -w
+
+# Check backup job logs
+kubectl logs -n postgres-operator job/hippo-backup-$(kubectl get jobs -n postgres-operator -o jsonpath='{.items[-1].metadata.name}' | grep hippo-backup) --tail=100
+
+# ----------------------------------------------------------------------------
+# RESTORE FROM BACKUP
+# ----------------------------------------------------------------------------
+
+# Restore to latest backup (in-place restore)
+# WARNING: This will stop the cluster, restore, and restart
+kubectl annotate postgrescluster hippo -n postgres-operator --overwrite \
+  postgres-operator.crunchydata.com/pgbackrest-restore="$(date +%Y%m%d%H%M%S)"
+
+# Point-in-time recovery (PITR) - edit deployment.yaml to add restore section:
+# spec:
+#   dataSource:
+#     postgresCluster:
+#       clusterName: hippo
+#       repoName: repo1
+#       options:
+#         - --type=time
+#         - --target="2025-01-15 12:00:00+00"
+
+# Monitor restore progress
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo -w
+
+# Verify restore completed
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "SELECT pg_postmaster_start_time();"
+
+# ----------------------------------------------------------------------------
+# BACKUP RETENTION & CLEANUP
+# ----------------------------------------------------------------------------
+
+# Check current retention settings (from deployment.yaml):
+# repo1-retention-full: "7"    (keep 7 full backups)
+# repo1-retention-diff: "14"   (keep 14 differential backups)
+
+# Check backup schedule (from deployment.yaml):
+# full: "0 2 * * 0"           (Sunday 02:00)
+# differential: "0 2 * * 1-6" (Mon-Sat 02:00)
+# incremental: "0 */6 * * *"  (every 6 hours)
+
+# List all backup-related resources
+kubectl get jobs,cronjobs -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo

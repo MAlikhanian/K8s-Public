@@ -9,98 +9,27 @@ spec:
   postgresVersion: 17
   port: 5432
 
-  # --- Instances / HA ---
   instances:
     - name: instance1
       replicas: 3
       dataVolumeClaimSpec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: fast-rbd           # <-- your prod StorageClass
+        storageClassName: ceph-block
         resources:
           requests:
-            storage: 200Gi                   # <-- per-replica
-      resources:
-        requests:
-          cpu: "2"
-          memory: "8Gi"
-        limits:
-          cpu: "4"
-          memory: "16Gi"
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: postgres-operator.crunchydata.com/cluster
-                    operator: In
-                    values: ["hippo"]
-              topologyKey: "kubernetes.io/hostname"
+            storage: 200Gi
 
-  # --- Patroni/Postgres tuning (safe start; we can refine by workload) ---
-  patroni:
-    dynamicConfiguration:
-      postgresql:
-        parameters:
-          shared_buffers: "2GB"
-          effective_cache_size: "6GB"
-          work_mem: "32MB"
-          maintenance_work_mem: "512MB"
-          wal_compression: "on"
-          max_wal_size: "8GB"
-          min_wal_size: "2GB"
-          autovacuum_naptime: "10s"
-          autovacuum_vacuum_cost_limit: "2000"
-          autovacuum_work_mem: "256MB"
-      # Uncomment for RPO=0:
-      # synchronous_mode: true
-      # postgresql:
-      #   parameters:
-      #     synchronous_standby_names: "1 (any 2)"
-
-  # --- PgBouncer (recommended for app traffic like GitLab) ---
-  proxy:
-    pgBouncer:
-      replicas: 2
-      resources:
-        requests: { cpu: "250m", memory: "512Mi" }
-        limits:   { cpu: "500m", memory: "1Gi" }
-      config:
-        global:
-          max_client_conn: "1000"
-          default_pool_size: "50"
-
-  # --- TLS (optional; enable when certs ready) ---
-  # Provide your own CA and server certs, or integrate cert-manager
-  tls:
-    ca:
-      create: false
-      secret:
-        name: pg-ca-bundle            # secret with ca.crt
-    tlsSecret:
-      name: hippo-tls                 # secret with tls.crt, tls.key
-
-  # --- Backups via pgBackRest (Ceph RGW strongly recommended) ---
   backups:
     pgbackrest:
-      global:
-        repo1-retention-full: "7"
-        repo1-retention-diff: "14"
       repos:
         - name: repo1
-          s3:
-            bucket: "pg-hippo-backups"                 # <-- your Ceph bucket
-            endpoint: "https://ceph-rgw.example.com"   # <-- your RGW URL
-            region: "us-east-1"
-      schedules:
-        full: "0 2 * * 0"            # Sun 02:00
-        differential: "0 2 * * 1-6"  # Mon–Sat 02:00
-        incremental: "0 */6 * * *"   # every 6 hours
+          volume:
+            volumeClaimSpec:
+              accessModes: ["ReadWriteOnce"]
+              storageClassName: ceph-block
+              resources:
+                requests:
+                  storage: 200Gi
 
-  # --- Users (choose one style) ---
-  # Keep default 'postgres' only:
   users:
     - name: postgres
-  # OR provision an app user + DB (uncomment and adjust):
-  # users:
-  #   - name: hippo
-  #     databases: ["zoo"]

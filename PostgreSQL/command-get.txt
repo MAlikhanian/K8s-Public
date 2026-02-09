@@ -1,0 +1,49 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+kubectl get pods -n postgres-operator
+kubectl get secrets -n postgres-operator
+kubectl get pvc -n postgres-operator
+kubectl get configmaps -n postgres-operator
+kubectl get svc -n postgres-operator
+kubectl get jobs -n postgres-operator
+kubectl get cronjobs -n postgres-operator
+kubectl get sts -n postgres-operator
+kubectl get certificate -n postgres-operator
+
+# Get PostgresCluster CR status
+kubectl get postgresclusters -n postgres-operator
+kubectl get postgresclusters hippo -n postgres-operator -o yaml
+
+# Get PgBouncer pods specifically
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/role=pgbouncer
+
+# Get Postgres instance pods specifically
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/role=master
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/role=replica
+
+# Get all pods for the hippo cluster
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo
+
+# Get connection secret details
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o json | jq '.data | keys'
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o json | jq '.data | with_entries(.value |= @base64d)'
+
+# Get individual connection fields
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.host}' | base64 -d
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.port}' | base64 -d
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.user}' | base64 -d
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.password}' | base64 -d
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.uri}' | base64 -d
+
+# Get TLS secrets
+kubectl get secret pgo-root-cacert -n postgres-operator
+kubectl get secret hippo-cluster-cert -n postgres-operator
+
+# Get pgBackRest secret
+kubectl get secret hippo-pgbackrest -n postgres-operator
+
+# Get StorageClass
+kubectl get sc fast-rbd
+
+# Get operator pods
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/control-plane=postgres-operator

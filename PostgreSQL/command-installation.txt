@@ -1,0 +1,118 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+# ============================================================================
+# CRUNCHY DATA POSTGRES OPERATOR (PGO) INSTALLATION
+# Based on: https://access.crunchydata.com/documentation/postgres-operator/v5/
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# STEP 1: Install PGO (Crunchy Postgres Operator)
+# ----------------------------------------------------------------------------
+
+# Create namespace
+kubectl create namespace postgres-operator
+
+# Option A: Install via kubectl (recommended for quick start)
+kubectl apply --server-side -k kustomize/install/default
+
+# Option B: Install via Helm
+helm repo add crunchydata https://charts.crunchydata.com
+helm repo update
+helm install pgo crunchydata/pgo -n postgres-operator
+
+# Verify operator is running
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/control-plane=postgres-operator
+
+# Check CRDs are installed
+kubectl get crd | grep postgres
+
+# ----------------------------------------------------------------------------
+# STEP 2: Deploy PostgresCluster
+# ----------------------------------------------------------------------------
+
+kubectl apply -f deployment.yaml -n postgres-operator
+
+# Watch cluster come up
+kubectl get pods -n postgres-operator -w
+
+# Check cluster status
+kubectl get postgresclusters hippo -n postgres-operator
+
+# ----------------------------------------------------------------------------
+# STEP 3: Verify Cluster Health
+# ----------------------------------------------------------------------------
+
+# Check all pods are Running
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo
+
+# Check PVCs are Bound
+kubectl get pvc -n postgres-operator
+
+# Check services are created
+kubectl get svc -n postgres-operator
+
+# Check Patroni cluster status
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- patronictl list
+
+# ----------------------------------------------------------------------------
+# STEP 4: Get Connection Information
+# ----------------------------------------------------------------------------
+
+# Get full connection URI
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.uri}' | base64 -d
+
+# Get host
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.host}' | base64 -d
+
+# Get password
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.password}' | base64 -d
+
+# ----------------------------------------------------------------------------
+# UPGRADE OPERATOR
+# ----------------------------------------------------------------------------
+
+# Via Helm
+helm repo update
+helm upgrade pgo crunchydata/pgo -n postgres-operator
+
+# Via kubectl
+kubectl apply --server-side -k kustomize/install/default
+
+# ----------------------------------------------------------------------------
+# UPDATE CLUSTER (apply changes to deployment.yaml)
+# ----------------------------------------------------------------------------
+
+kubectl apply -f deployment.yaml -n postgres-operator
+
+# ----------------------------------------------------------------------------
+# SCALE INSTANCES
+# ----------------------------------------------------------------------------
+
+# Scale replicas (edit deployment.yaml and reapply, or patch directly)
+kubectl patch postgrescluster hippo -n postgres-operator --type='merge' -p='{"spec":{"instances":[{"name":"instance1","replicas":3}]}}'
+
+# Scale PgBouncer
+kubectl patch postgrescluster hippo -n postgres-operator --type='merge' -p='{"spec":{"proxy":{"pgBouncer":{"replicas":2}}}}'
+
+# ----------------------------------------------------------------------------
+# RESTART (rolling restart)
+# ----------------------------------------------------------------------------
+
+# Trigger a rolling restart
+kubectl patch postgrescluster hippo -n postgres-operator --type='merge' -p='{"spec":{"metadata":{"annotations":{"restarted":"'$(date +%Y%m%d%H%M%S)'"}}}}'
+
+# Or annotate to trigger restart
+kubectl annotate postgrescluster hippo -n postgres-operator --overwrite postgres-operator.crunchydata.com/pgbackrest-restore=""
+
+# ----------------------------------------------------------------------------
+# UNINSTALL
+# ----------------------------------------------------------------------------
+
+# Delete the PostgresCluster (this will delete all pods, PVCs, etc.)
+kubectl delete postgrescluster hippo -n postgres-operator
+
+# Uninstall the operator (via Helm)
+helm uninstall pgo -n postgres-operator
+
+# Delete namespace
+kubectl delete namespace postgres-operator
