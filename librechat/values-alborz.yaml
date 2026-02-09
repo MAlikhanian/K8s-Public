@@ -346,6 +346,11 @@ librechat:
           headers:
             HTTP-Referer: "https://chat.alborzdco.ir"
             X-Title: "Alborz AI Chat"
+    
+    mcpServers:
+      weather-coimPrise-MCP-prod:
+        type: "sse"
+        url: "https://mcp.sebaoffice.ir/sse"
 
   existingConfigYaml: ""
 
