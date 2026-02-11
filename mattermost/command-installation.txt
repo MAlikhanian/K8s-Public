@@ -43,6 +43,20 @@ kubectl get pods -n mattermost-operator
 kubectl get crd | grep mattermost
 
 # ----------------------------------------------------------------------------
+# STEP 2.5: Create Docker Registry Secret
+# ----------------------------------------------------------------------------
+
+# Create namespace for Mattermost (if not already created)
+kubectl create ns mattermost
+
+# Create Docker registry secret for pulling images from private registry
+kubectl create secret docker-registry docker-secret \
+  --docker-server=docker.sebaoffice.ir \
+  --docker-username=0082280665 \
+  --docker-password=ABcd@12345 \
+  --namespace mattermost
+
+# ----------------------------------------------------------------------------
 # STEP 3: Create Mattermost License Secret (Enterprise Only - SKIP FOR TEAM EDITION)
 # ----------------------------------------------------------------------------
 
@@ -218,6 +232,7 @@ kubectl -n mattermost delete mattermost <INSTALLATION_NAME>
 
 # Delete secrets
 # kubectl -n mattermost delete secret my-mattermost-license  # Only if Enterprise license was used
+kubectl -n mattermost delete secret docker-secret
 kubectl -n mattermost delete secret my-postgres-connection
 kubectl -n mattermost delete secret my-s3-credentials
 
