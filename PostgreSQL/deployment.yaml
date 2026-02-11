@@ -18,6 +18,19 @@ spec:
         resources:
           requests:
             storage: 200Gi
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: postgres-operator.crunchydata.com/cluster
+                    operator: In
+                    values: ["hippo"]
+              topologyKey: "kubernetes.io/hostname"
+
+  proxy:
+    pgBouncer:
+      replicas: 2
 
   backups:
     pgbackrest:
