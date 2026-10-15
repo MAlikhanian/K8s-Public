@@ -1,0 +1,139 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+helm install librechat oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat \
+  --values values.yaml
+
+helm upgrade librechat oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat \
+  --values values.yaml
+
+helm install librechat-spi oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-spi \
+  --values values-spi.yaml
+
+helm upgrade librechat-spi oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-spi \
+  --values values-spi.yaml
+
+helm install librechat-alborz oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-alborz \
+  --values values-alborz.yaml
+
+helm upgrade librechat-alborz oci://ghcr.io/danny-avila/librechat-chart/librechat \
+  --namespace librechat-alborz \
+  --values values-alborz.yaml
+
+helm uninstall librechat -n librechat
+helm uninstall librechat-spi -n librechat-spi
+helm uninstall librechat-alborz -n librechat-alborz
+
+kubectl delete pod -n librechat --all
+kubectl delete pvc -n librechat --all
+
+--------------------------------------------------------------------------------------------
+
+kubectl create secret generic ldap-ca-cert -n librechat \
+  --from-file=ca.crt=../gitlab/seba-root-ca.pem
+
+kubectl create secret generic librechat-credentials-env \
+  --from-literal=CREDS_KEY=$(openssl rand -hex 16) \
+  --from-literal=CREDS_IV=$(openssl rand -hex 8) \
+  --from-literal=JWT_SECRET=$(openssl rand -hex 16) \
+  --from-literal=JWT_REFRESH_SECRET=$(openssl rand -hex 16) \
+  --from-literal=MEILI_MASTER_KEY=$(openssl rand -hex 16) \
+  --from-literal=OPENAI_API_KEY="<OPENAI_API_KEY>" \
+  --namespace librechat
+
+  kubectl create secret generic librechat-credentials-env \
+  --from-literal=CREDS_KEY=$(openssl rand -hex 16) \
+  --from-literal=CREDS_IV=$(openssl rand -hex 8) \
+  --from-literal=JWT_SECRET=$(openssl rand -hex 16) \
+  --from-literal=JWT_REFRESH_SECRET=$(openssl rand -hex 16) \
+  --from-literal=MEILI_MASTER_KEY=$(openssl rand -hex 16) \
+  --from-literal=OPENAI_API_KEY="" \
+  --from-literal=OPENROUTER_KEY="" \
+  --namespace librechat \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+  kubectl create secret generic librechat-credentials-env \
+  --from-literal=CREDS_KEY=$(openssl rand -hex 16) \
+  --from-literal=CREDS_IV=$(openssl rand -hex 8) \
+  --from-literal=JWT_SECRET=$(openssl rand -hex 16) \
+  --from-literal=JWT_REFRESH_SECRET=$(openssl rand -hex 16) \
+  --from-literal=MEILI_MASTER_KEY=$(openssl rand -hex 16) \
+  --from-literal=OPENROUTER_KEY="" \
+  --from-literal=LDAP_BIND_CREDENTIALS="ABcd@12345" \
+  --namespace librechat \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "add", "path": "/data/LDAP_SERVER", "value":"'$(echo -n "sebadc01.seba.local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_PORT", "value":"'$(echo -n "389" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_BASE_DN", "value":"'$(echo -n "DC=seba,DC=local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_BIND_DN", "value":"'$(echo -n "SEBA\Read" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_BIND_PASSWORD", "value":"'$(echo -n "ABcd@12345" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_SEARCH_FILTER", "value":"'$(echo -n "(sAMAccountName={{username}})" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_GROUP_BASE_DN", "value":"'$(echo -n "CN=Users,DC=seba,DC=local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_GROUP_FILTER", "value":"'$(echo -n "(member={{userDN}})" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_USER_BASE_DN", "value":"'$(echo -n "CN=Users,DC=seba,DC=local" | base64)'"},
+    {"op": "add", "path": "/data/LDAP_USER_FILTER", "value":"'$(echo -n "(sAMAccountName={{username}})" | base64)'"}
+  ]'
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "add", "path": "/data/LDAP_BIND_CREDENTIALS", "value":"'$(echo -n "ABcd@12345" | base64)'"},
+  ]'
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "remove", "path": "/data/LDAP_SERVER"},
+    {"op": "remove", "path": "/data/LDAP_PORT"},
+    {"op": "remove", "path": "/data/LDAP_BASE_DN"},
+    {"op": "remove", "path": "/data/LDAP_BIND_DN"},
+    {"op": "remove", "path": "/data/LDAP_SEARCH_FILTER"},
+    {"op": "remove", "path": "/data/LDAP_GROUP_BASE_DN"},
+    {"op": "remove", "path": "/data/LDAP_GROUP_FILTER"},
+    {"op": "remove", "path": "/data/LDAP_USER_BASE_DN"},
+    {"op": "remove", "path": "/data/LDAP_USER_FILTER"}
+  ]'
+
+  kubectl patch secret librechat-credentials-env -n librechat \
+  --type='json' \
+  -p='[
+    {"op": "remove", "path": "/data/LDAP_BIND_PASSWORD"},
+  ]'
+
+--------------------------------------------------------------------------------------------
+
+kubectl create secret docker-registry docker-secret \
+  --docker-server=docker.sebaoffice.ir \
+  --docker-username=0082280665 \
+  --docker-password=<DOCKER_PASSWORD> \
+  --namespace librechat
+
+--------------------------------------------------------------------------------------------
+
+kubectl create configmap librechat-icons \
+  --from-file=icons \
+  --namespace librechat
+
+--------------------------------------------------------------------------------------------
+
+kubectl -n librechat-alborz scale deployment librechat-alborz-librechat --replicas=0
+
+kubectl -n librechat-alborz scale deployment librechat-alborz-librechat --replicas=1
+
+kubectl -n librechat scale deployment librechat-librechat --replicas=0
+
+kubectl -n librechat scale deployment librechat-librechat --replicas=1
+
+kubectl -n librechat-spi scale deployment librechat-spi-librechat --replicas=0
+
+kubectl -n librechat-spi scale deployment librechat-spi-librechat --replicas=1
+
+--------------------------------------------------------------------------------------------

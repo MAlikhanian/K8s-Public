@@ -1,0 +1,37 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+# Get events sorted by timestamp
+kubectl get events -n postgres-operator --sort-by=.lastTimestamp | tail -60
+
+# Describe the PostgresCluster CR (most useful for diagnosing issues)
+kubectl describe postgrescluster hippo -n postgres-operator
+
+# Describe specific pods
+kubectl describe pod -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo
+
+# Describe PgBouncer pods
+kubectl describe pod -n postgres-operator -l postgres-operator.crunchydata.com/role=pgbouncer
+
+# Postgres instance logs
+kubectl logs -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/instance-set=instance1 -c database --tail=100
+
+# PgBouncer logs
+kubectl logs -n postgres-operator -l postgres-operator.crunchydata.com/role=pgbouncer -c pgbouncer --tail=100
+
+# Operator logs
+kubectl logs -n postgres-operator -l postgres-operator.crunchydata.com/control-plane=postgres-operator --tail=100
+
+# pgBackRest repo-host logs
+kubectl logs -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/pgbackrest="" --tail=100
+
+# pgBackRest backup job logs
+kubectl logs -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/pgbackrest-backup="" --tail=100
+
+# Follow logs in real-time
+kubectl logs -f -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/instance-set=instance1 -c database --tail=50
+
+# Check Patroni status (from inside a postgres pod)
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- patronictl list
+
+# Check replication status
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "SELECT * FROM pg_stat_replication;"

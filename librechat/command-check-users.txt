@@ -1,0 +1,69 @@
+# Commands to Check LibreChat User Statistics
+
+## Method 1: Direct MongoDB Query (Most Accurate)
+# For SEBA instance
+kubectl exec -it -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "db.users.countDocuments()"
+
+# For SPI instance
+kubectl exec -it -n librechat-spi deployment/librechat-spi-mongodb -- mongosh LibreChat --eval "db.users.countDocuments()"
+
+## Get detailed user list with registration dates
+kubectl exec -it -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "db.users.find({}, {username: 1, email: 1, createdAt: 1}).pretty()"
+
+kubectl exec -it -n librechat-spi deployment/librechat-spi-mongodb -- mongosh LibreChat --eval "db.users.find({}, {username: 1, email: 1, createdAt: 1}).pretty()"
+
+## Get user count by date
+kubectl exec -it -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "db.users.aggregate([{$group: {_id: {$dateToString: {format: '%Y-%m-%d', date: '$createdAt'}}, count: {$sum: 1}}}, {$sort: {_id: 1}}])"
+
+## Get last login statistics (if tracked)
+kubectl exec -it -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "db.users.find({}, {username: 1, email: 1, lastLogin: 1, createdAt: 1}).sort({lastLogin: -1}).limit(10).pretty()"
+
+## Count active conversations
+kubectl exec -it -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "db.conversations.countDocuments()"
+
+## Get conversation statistics per user
+kubectl exec -it -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "db.conversations.aggregate([{$group: {_id: '$user', conversationCount: {$sum: 1}}}, {$sort: {conversationCount: -1}}, {$limit: 10}])"
+
+## Method 2: Check Pod Logs for Login Events
+# For SEBA
+kubectl logs -n librechat deployment/librechat | grep -i "login\|authentication\|ldap"
+
+# For SPI
+kubectl logs -n librechat-spi deployment/librechat | grep -i "login\|authentication\|ldap"
+
+## Method 3: Access MongoDB Shell Interactively
+# For SEBA
+kubectl exec -it -n librechat deployment/librechat-mongodb -- mongosh LibreChat
+
+# For SPI
+kubectl exec -it -n librechat-spi deployment/librechat-spi-mongodb -- mongosh LibreChat
+
+# Then run queries:
+# db.users.countDocuments()
+# db.users.find().pretty()
+# db.users.find({}, {username: 1, email: 1, createdAt: 1}).pretty()
+# db.conversations.countDocuments()
+
+## Method 4: Export User List to File
+# For SEBA
+kubectl exec -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "db.users.find({}, {username: 1, email: 1, name: 1, createdAt: 1, _id: 0}).toArray()" > seba-users.json
+
+# For SPI
+kubectl exec -n librechat-spi deployment/librechat-spi-mongodb -- mongosh LibreChat --eval "db.users.find({}, {username: 1, email: 1, name: 1, createdAt: 1, _id: 0}).toArray()" > spi-users.json
+
+## Method 5: Get Statistics Summary
+# Create a comprehensive report
+kubectl exec -n librechat deployment/librechat-mongodb -- mongosh LibreChat --eval "
+print('=== LibreChat Statistics ===');
+print('Total Users: ' + db.users.countDocuments());
+print('Total Conversations: ' + db.conversations.countDocuments());
+print('Total Messages: ' + db.messages.countDocuments());
+print('');
+print('=== Recent Users (Last 10) ===');
+db.users.find({}, {username: 1, email: 1, createdAt: 1, _id: 0}).sort({createdAt: -1}).limit(10).forEach(printjson);
+"
+
+## Method 6: Check Kubernetes Events
+kubectl get events -n librechat --sort-by='.lastTimestamp' | grep librechat
+kubectl get events -n librechat-spi --sort-by='.lastTimestamp' | grep librechat
+

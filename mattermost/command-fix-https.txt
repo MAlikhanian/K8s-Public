@@ -1,0 +1,101 @@
+# ============================================================================
+# FIX HTTPS FOR MATTERMOST INGRESS
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# STEP 1: Apply Certificate Resource (if not already done)
+# ----------------------------------------------------------------------------
+
+kubectl apply -f mattermost-certificate.yaml
+
+# ----------------------------------------------------------------------------
+# STEP 2: Check Certificate Status
+# ----------------------------------------------------------------------------
+
+# Check if certificate exists
+kubectl -n mattermost get certificate
+
+# Check certificate details
+kubectl -n mattermost describe certificate mattermost-tls
+
+# Check certificate requests
+kubectl -n mattermost get certificaterequests
+
+# Watch certificate status (wait until Ready)
+kubectl -n mattermost get certificate -w
+
+# ----------------------------------------------------------------------------
+# STEP 3: Verify TLS Secret Was Created
+# ----------------------------------------------------------------------------
+
+# Check if secret exists (cert-manager creates this automatically)
+kubectl -n mattermost get secret mattermost-tls
+
+# If secret doesn't exist, wait a bit longer and check certificate status
+# Certificate must be in "Ready" state before secret is created
+
+# ----------------------------------------------------------------------------
+# STEP 4: Patch Ingress to Add TLS Configuration
+# ----------------------------------------------------------------------------
+
+# Get current ingress name
+INGRESS_NAME=$(kubectl -n mattermost get ingress -o jsonpath='{.items[0].metadata.name}')
+echo "Ingress name: $INGRESS_NAME"
+
+# Patch ingress to add TLS section
+kubectl -n mattermost patch ingress $INGRESS_NAME --type='json' -p='[
+  {
+    "op": "add",
+    "path": "/spec/tls",
+    "value": [
+      {
+        "hosts": ["social.sebaoffice.ir"],
+        "secretName": "mattermost-tls"
+      }
+    ]
+  }
+]'
+
+# Alternative: Use kubectl edit if patch doesn't work
+# kubectl -n mattermost edit ingress $INGRESS_NAME
+# Then add under spec:
+# tls:
+#   - hosts:
+#     - social.sebaoffice.ir
+#     secretName: mattermost-tls
+
+# ----------------------------------------------------------------------------
+# STEP 5: Verify Ingress TLS Configuration
+# ----------------------------------------------------------------------------
+
+# Check ingress now shows port 443
+kubectl -n mattermost get ingress
+
+# Get detailed ingress information
+kubectl -n mattermost describe ingress $INGRESS_NAME
+
+# Check ingress YAML to confirm TLS section
+kubectl -n mattermost get ingress $INGRESS_NAME -o yaml | grep -A 5 tls
+
+# ----------------------------------------------------------------------------
+# STEP 6: Test HTTPS Access
+# ----------------------------------------------------------------------------
+
+# Test from inside cluster
+kubectl run -it --rm test-https --image=curlimages/curl --restart=Never -- \
+  curl -vI https://social.sebaoffice.ir
+
+# Or test from your local machine
+# curl -vI https://social.sebaoffice.ir
+
+# ----------------------------------------------------------------------------
+# NOTE: Operator May Overwrite Ingress
+# ----------------------------------------------------------------------------
+
+# If the Mattermost operator overwrites your TLS changes, you may need to:
+# 1. Check if Mattermost CRD supports TLS configuration
+# 2. Add TLS configuration to mattermost-installation.yaml (if supported)
+# 3. Or use an IngressClass/annotation-based approach
+
+# Check if operator is managing the ingress
+kubectl -n mattermost get ingress $INGRESS_NAME -o yaml | grep -i "managed-by\|owner"

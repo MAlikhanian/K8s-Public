@@ -1,0 +1,91 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+# ============================================================================
+# POSTGRESQL USER & DATABASE MANAGEMENT
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# CONNECT TO POSTGRESQL
+# ----------------------------------------------------------------------------
+
+# Get primary pod name
+kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master
+
+# Interactive psql session (as postgres superuser)
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres
+
+# Run a single query
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "SELECT version();"
+
+# Port-forward for local access
+kubectl port-forward svc/hippo-primary -n postgres-operator 5432:5432
+
+# Port-forward PgBouncer for local access
+kubectl port-forward svc/hippo-pgbouncer -n postgres-operator 5432:5432
+
+# ----------------------------------------------------------------------------
+# LIST DATABASES & USERS
+# ----------------------------------------------------------------------------
+
+# List all databases
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "\l"
+
+# List all users/roles
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "\du"
+
+# Check active connections
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "SELECT datname, usename, client_addr, state FROM pg_stat_activity WHERE state IS NOT NULL;"
+
+# Check database sizes
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "SELECT datname, pg_size_pretty(pg_database_size(datname)) FROM pg_database ORDER BY pg_database_size(datname) DESC;"
+
+# ----------------------------------------------------------------------------
+# CREATE DATABASE
+# ----------------------------------------------------------------------------
+
+# Create a new database
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "CREATE DATABASE myapp;"
+
+# Create database with owner
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "CREATE DATABASE myapp OWNER myuser;"
+
+# ----------------------------------------------------------------------------
+# CREATE USER (via CRD - recommended)
+# ----------------------------------------------------------------------------
+
+# The recommended way is to add users to the PostgresCluster spec in deployment.yaml:
+# spec:
+#   users:
+#     - name: postgres
+#     - name: myuser
+#       databases: ["mydb"]
+#
+# Then apply: kubectl apply -f deployment.yaml -n postgres-operator
+# The operator will create the user, database, and a secret with credentials
+
+# Get the auto-created user secret
+# kubectl get secret hippo-pguser-<username> -n postgres-operator -o json | jq '.data | with_entries(.value |= @base64d)'
+
+# ----------------------------------------------------------------------------
+# CREATE USER (via SQL - manual)
+# ----------------------------------------------------------------------------
+
+# Create user
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "CREATE USER myuser WITH PASSWORD 'securepassword';"
+
+# Grant privileges
+kubectl exec -it -n postgres-operator $(kubectl get pods -n postgres-operator -l postgres-operator.crunchydata.com/cluster=hippo,postgres-operator.crunchydata.com/role=master -o jsonpath='{.items[0].metadata.name}') -c database -- psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE myapp TO myuser;"
+
+# ----------------------------------------------------------------------------
+# GET CONNECTION STRINGS
+# ----------------------------------------------------------------------------
+
+# Get postgres user connection URI
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o jsonpath='{.data.uri}' | base64 -d
+
+# Get all connection info for a user
+kubectl get secret hippo-pguser-postgres -n postgres-operator -o json | jq '.data | with_entries(.value |= @base64d)'
+
+# Build connection string for apps:
+# Direct to primary:   postgres://user:pass@hippo-primary.postgres-operator.svc.cluster.local:5432/dbname
+# Via PgBouncer:        postgres://user:pass@hippo-pgbouncer.postgres-operator.svc.cluster.local:5432/dbname

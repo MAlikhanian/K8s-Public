@@ -1,0 +1,71 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+# Get Mattermost installation status
+kubectl -n mattermost get mattermost
+
+# Get detailed Mattermost installation information
+kubectl -n mattermost describe mattermost <INSTALLATION_NAME>
+
+# Get all pods in Mattermost namespace
+kubectl -n mattermost get pods
+
+# Get all resources in Mattermost namespace
+kubectl -n mattermost get all
+
+# Get secrets
+kubectl -n mattermost get secrets
+
+# Get configmaps
+kubectl -n mattermost get configmaps
+
+# Get ingress
+kubectl -n mattermost get ingress
+
+# Get services
+kubectl -n mattermost get svc
+
+# Get persistent volume claims
+kubectl -n mattermost get pvc
+
+# Get deployments
+kubectl -n mattermost get deployments
+
+# Get statefulsets
+kubectl -n mattermost get sts
+
+# Get events (sorted by timestamp)
+kubectl -n mattermost get events --sort-by='.lastTimestamp'
+
+# Get Mattermost Operator pods
+kubectl -n mattermost-operator get pods
+
+# Get Helm releases
+helm list -n mattermost
+helm list -n mattermost-operator
+
+# Get Mattermost installation YAML
+kubectl -n mattermost get mattermost <INSTALLATION_NAME> -o yaml
+
+# Get Mattermost installation JSON
+kubectl -n mattermost get mattermost <INSTALLATION_NAME> -o json
+
+# Get pod logs
+kubectl -n mattermost logs <pod-name>
+
+# Follow pod logs
+kubectl -n mattermost logs -f <pod-name>
+
+# Get logs from all pods with label
+kubectl -n mattermost logs -l app=mattermost
+
+# Get Operator logs
+kubectl -n mattermost-operator logs -l control-plane=controller-manager
+
+# Describe pod for detailed information
+kubectl -n mattermost describe pod <pod-name>
+
+# Get pod resource usage
+kubectl -n mattermost top pods
+
+# Get node resource usage
+kubectl top nodes

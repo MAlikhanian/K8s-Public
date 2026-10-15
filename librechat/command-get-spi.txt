@@ -1,0 +1,53 @@
+Hello Cursor. this file is just template please do not change it. just use it as a reference.
+
+kubectl get pods -n librechat-spi 
+kubectl get secrets -n librechat-spi 
+kubectl get pvc -n librechat-spi 
+kubectl get configmaps -n librechat-spi 
+kubectl get ingress -n librechat-spi 
+kubectl get jobs -n librechat-spi 
+kubectl get cronjobs -n librechat-spi 
+kubectl get svc -n librechat-spi 
+kubectl get certificate -n librechat-spi 
+kubectl get sts -n librechat-spi 
+
+kubectl get secret librechat-credentials-env -n librechat-spi -o json | jq '.data | keys'
+kubectl get secret librechat-credentials-env -n librechat-spi -o jsonpath='{.data.OPENAI_API_KEY}' | base64 -d
+
+kubectl get secret librechat-credentials-env -n librechat-spi -o json | jq '.data | with_entries(.value |= @base64d)'
+
+kubectl exec -it -n librechat librechat-librechat-6b46f97476-bsjhp -- env | grep LDAP_BIND_CREDENTIALS
+
+# Basic details
+kubectl describe configmap -n librechat librechat-mongodb-common-scripts
+
+# Full YAML output (shows all data)
+kubectl get configmap -n librechat librechat-mongodb-common-scripts -o yaml
+
+# Just the data section
+kubectl get configmap -n librechat librechat-mongodb-common-scripts -o jsonpath='{.data}'
+
+# Helm commands
+
+helm list -n librechat
+helm get values librechat -n librechat
+helm get values librechat -n librechat --all
+helm get manifest librechat -n librechat
+
+# Get specific values from Helm (using jq)
+helm get values librechat -n librechat -o yaml | grep -A 10 "LDAP"
+helm get values librechat -n librechat -o json | jq '.librechat.configEnv'
+helm get values librechat -n librechat -o json | jq '.librechat.configEnv.LDAP_URL'
+helm get values librechat -n librechat -o json | jq '.librechat.configEnv | with_entries(select(.key | startswith("LDAP")))'
+
+# Get all LDAP-related values
+helm get values librechat -n librechat --all -o json | jq '.librechat.configEnv | to_entries[] | select(.key | startswith("LDAP"))'
+
+# Get specific nested values
+helm get values librechat -n librechat -o json | jq '.mongodb.image.tag'
+helm get values librechat -n librechat -o json | jq '.global.imagePullSecrets'
+helm get values librechat -n librechat -o json | jq '.librechat.existingSecretName'
+
+# Get specific values using yq (alternative to jq for YAML)
+helm get values librechat -n librechat | yq '.librechat.configEnv.LDAP_URL'
+helm get values librechat -n librechat | yq '.librechat.configEnv | to_entries | .[] | select(.key | test("LDAP"))'

@@ -1,0 +1,52 @@
+apiVersion: postgres-operator.crunchydata.com/v1beta1
+kind: PostgresCluster
+metadata:
+  name: hippo
+  namespace: postgres-operator
+  annotations:
+    postgres-operator.crunchydata.com/autoCreateUserSchema: "true"
+spec:
+  postgresVersion: 17
+  port: 5432
+
+  config:
+    parameters:
+      max_connections: "500"
+
+  instances:
+    - name: instance1
+      replicas: 3
+      dataVolumeClaimSpec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: ceph-block
+        resources:
+          requests:
+            storage: 200Gi
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: postgres-operator.crunchydata.com/cluster
+                    operator: In
+                    values: ["hippo"]
+              topologyKey: "kubernetes.io/hostname"
+
+  proxy:
+    pgBouncer:
+      replicas: 2
+
+  backups:
+    pgbackrest:
+      repos:
+        - name: repo1
+          volume:
+            volumeClaimSpec:
+              accessModes: ["ReadWriteOnce"]
+              storageClassName: ceph-block
+              resources:
+                requests:
+                  storage: 200Gi
+
+  users:
+    - name: postgres
